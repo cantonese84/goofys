@@ -195,7 +195,7 @@ func NewApp() (app *cli.App) {
 
 			cli.StringFlag{
 				Name:  "sse-c",
-				Usage: "Enable server-side encryption using this base64-encoded key (default: off)",
+				Usage: "Enable server-side encryption using this base64-encoded key.  Alternatively the encoded key can be read from a file by specifying file://path_to_file as the value (default: off)",
 				Value: "",
 			},
 
@@ -385,6 +385,22 @@ func PopulateFlags(c *cli.Context) (ret *FlagStorage) {
 			flags.Cleanup()
 		}
 	}()
+
+	if config.SseC != "" {
+		if strings.Index(config.SseC, "file://") == 0 {
+			keyfile := config.SseC[7:]
+
+			var buf []byte
+			buf, err = ioutil.ReadFile(keyfile)
+			if err != nil {
+				io.WriteString(cli.ErrWriter,
+					fmt.Sprintf("Problem reading sse-c key file at %s: %v\n\n", keyfile, err))
+				return nil
+			}
+
+			config.SseC = string(buf)
+		}
+	}
 
 	if c.IsSet("cache") {
 		cache := c.String("cache")
