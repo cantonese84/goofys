@@ -15,7 +15,7 @@
 package internal
 
 import (
-	. "github.com/kahing/goofys/api/common"
+	. "github.com/cantonese84/goofys/api/common"
 
 	"fmt"
 	"io"
