@@ -140,7 +140,11 @@ func (c *S3Config) ToAwsConfig(flags *FlagStorage) (*aws.Config, error) {
 			return nil, fmt.Errorf("sse-c is not base64-encoded: %v", err)
 		}
 
-		c.SseC = string(key)
+		// AWS SSE-C only support AES256; therefore key must be 256-bit long (or 32 bytes)
+		if len(key) != 32 {
+			return nil, fmt.Error("Base64 decoded sse-c key must be 256 bits long.")
+		}
+
 		m := md5.Sum(key)
 		c.SseCDigest = base64.StdEncoding.EncodeToString(m[:])
 	}
