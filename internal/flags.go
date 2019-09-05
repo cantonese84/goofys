@@ -343,6 +343,14 @@ func PopulateFlags(c *cli.Context) (ret *FlagStorage) {
 		Foreground: c.Bool("f"),
 	}
 
+	var err error
+
+	defer func() {
+		if err != nil {
+			flags.Cleanup()
+		}
+	}()
+
 	// S3
 	if c.IsSet("region") || c.IsSet("requester-pays") || c.IsSet("storage-class") ||
 		c.IsSet("profile") || c.IsSet("sse") || c.IsSet("sse-kms") ||
@@ -361,7 +369,6 @@ func PopulateFlags(c *cli.Context) (ret *FlagStorage) {
 		config.UseSSE = c.Bool("sse")
 		config.UseKMS = c.IsSet("sse-kms")
 		config.KMSKeyID = c.String("sse-kms")
-		config.SseC = c.String("sse-c")
 		config.ACL = c.String("acl")
 		config.Subdomain = c.Bool("subdomain")
 
@@ -369,6 +376,24 @@ func PopulateFlags(c *cli.Context) (ret *FlagStorage) {
 		if config.UseKMS {
 			config.UseSSE = true
 		}
+
+		sse_c := c.String("sse-c")
+		if sse_c != "" {
+			if strings.Index(sse_c, "file://") == 0 {
+				keyfile := sse_c[7:]
+
+				var buf []byte
+				buf, err = ioutil.ReadFile(keyfile)
+				if err != nil {
+					io.WriteString(cli.ErrWriter,
+						fmt.Sprintf("Problem reading sse-c key file at %s: %v\n\n", keyfile, err))
+					return nil
+				}
+
+				sse_c = string(buf)
+			}
+		}
+		config.SseC = sse_c
 	}
 
 	// Handle the repeated "-o" flag.
@@ -378,30 +403,6 @@ func PopulateFlags(c *cli.Context) (ret *FlagStorage) {
 
 	flags.MountPointArg = c.Args()[1]
 	flags.MountPoint = flags.MountPointArg
-	var err error
-
-	defer func() {
-		if err != nil {
-			flags.Cleanup()
-		}
-	}()
-
-	config, _ := flags.Backend.(*S3Config)
-	if config.SseC != "" {
-		if strings.Index(config.SseC, "file://") == 0 {
-			keyfile := config.SseC[7:]
-
-			var buf []byte
-			buf, err = ioutil.ReadFile(keyfile)
-			if err != nil {
-				io.WriteString(cli.ErrWriter,
-					fmt.Sprintf("Problem reading sse-c key file at %s: %v\n\n", keyfile, err))
-				return nil
-			}
-
-			config.SseC = string(buf)
-		}
-	}
 
 	if c.IsSet("cache") {
 		cache := c.String("cache")
