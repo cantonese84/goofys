@@ -386,6 +386,7 @@ func PopulateFlags(c *cli.Context) (ret *FlagStorage) {
 		}
 	}()
 
+	config, _ := flags.Backend.(*S3Config)
 	if config.SseC != "" {
 		if strings.Index(config.SseC, "file://") == 0 {
 			keyfile := config.SseC[7:]
