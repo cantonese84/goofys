@@ -145,6 +145,7 @@ func (c *S3Config) ToAwsConfig(flags *FlagStorage) (*aws.Config, error) {
 			return nil, fmt.Errorf("Base64 decoded sse-c key must be 256 bits long.")
 		}
 
+		c.SseC = string(key)
 		m := md5.Sum(key)
 		c.SseCDigest = base64.StdEncoding.EncodeToString(m[:])
 	}
